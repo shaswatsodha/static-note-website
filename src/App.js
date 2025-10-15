@@ -1,5 +1,15 @@
+// src/App.js
+
 import React, { useState, useEffect } from "react";
 import "./App.css";
+
+// ----------------------------------------------------
+// 1. DEFINE BASE_URL
+// Reads from REACT_APP_BACKEND_URL in the .env file.
+// Falls back to http://localhost:5000 for local development if the variable is not set.
+const BASE_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+// ----------------------------------------------------
+
 const CustomAlert = ({ message, onClose }) => (
   <div className="custom-alert-overlay">
     <div className="custom-alert-box">
@@ -10,6 +20,7 @@ const CustomAlert = ({ message, onClose }) => (
     </div>
   </div>
 );
+
 const LoginPage = ({ email, setEmail, password, setPassword, handleLogin, setPage }) => (
   <div className="container-box center-text margin-top-100">
     <h2 className="page-title-blue">Login</h2>
@@ -38,6 +49,7 @@ const LoginPage = ({ email, setEmail, password, setPassword, handleLogin, setPag
     </p>
   </div>
 );
+
 const SignupPage = ({ email, setEmail, password, setPassword, handleSignup, setPage }) => (
   <div className="container-box center-text margin-top-100">
     <h2 className="page-title-green">Signup</h2>
@@ -66,6 +78,7 @@ const SignupPage = ({ email, setEmail, password, setPassword, handleSignup, setP
     </p>
   </div>
 );
+
 const NotesApp = ({ email, setPage }) => {
   const [notes, setNotes] = useState([]);
   const [title, setTitle] = useState("");
@@ -78,29 +91,35 @@ const NotesApp = ({ email, setPage }) => {
   const [notePassword, setNotePassword] = useState("");
   const [passwordPrompt, setPasswordPrompt] = useState({ noteId: null, title: "" });
   const [enteredPassword, setEnteredPassword] = useState("");
+
   useEffect(() => {
     refreshNotes();
   }, [email]);
+
   const refreshNotes = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/getnotes/${email}`);
+      // 2. Updated Fetch Call
+      const res = await fetch(`${BASE_URL}/getnotes/${email}`);
       const data = await res.json();
       setNotes(data);
     } catch (err) {
       console.error("Failed to fetch notes:", err);
     }
   };
+
   const handleSave = async () => {
     if (!title.trim() || (isPrivate && !notePassword.trim())) return;
     try {
       if (editId) {
-        await fetch(`http://localhost:5000/updatenote/${editId}`, {
+        // 3. Updated Fetch Call
+        await fetch(`${BASE_URL}/updatenote/${editId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title, content, private: isPrivate, notePassword }),
         });
       } else {
-        await fetch("http://localhost:5000/addnote", {
+        // 4. Updated Fetch Call
+        await fetch(`${BASE_URL}/addnote`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userEmail: email, title, content, private: isPrivate, notePassword }),
@@ -117,14 +136,17 @@ const NotesApp = ({ email, setPage }) => {
     setShowForm(false);
     refreshNotes();
   };
+
   const handleDelete = async (id) => {
     try {
-      await fetch(`http://localhost:5000/deletenote/${id}`, { method: "DELETE" });
+      // 5. Updated Fetch Call
+      await fetch(`${BASE_URL}/deletenote/${id}`, { method: "DELETE" });
       setNotes(notes.filter((n) => n._id !== id));
     } catch (err) {
       console.error("Failed to delete note:", err);
     }
   };
+
   const handleEditClick = (note) => {
     setTitle(note.title);
     setContent(note.content);
@@ -132,6 +154,7 @@ const NotesApp = ({ email, setPage }) => {
     setEditId(note._id);
     setShowForm(true);
   };
+
   const handleNewNoteClick = () => {
     setTitle("");
     setContent("");
@@ -140,6 +163,7 @@ const NotesApp = ({ email, setPage }) => {
     setEditId(null);
     setShowForm(true);
   };
+
   const handleCancel = () => {
     setTitle("");
     setContent("");
@@ -148,9 +172,11 @@ const NotesApp = ({ email, setPage }) => {
     setEditId(null);
     setShowForm(false);
   };
+
   const filteredNotes = notes.filter(
     (note) => note.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
   return (
     <div className="notes-dashboard">
       <header className="dashboard-header">
@@ -261,29 +287,30 @@ const NotesApp = ({ email, setPage }) => {
               placeholder="Note Password"
             />
             <button
-  className="button-style unlock-button"
-  onClick={async () => {
-    try {
-      const res = await fetch(`http://localhost:5000/checknote/${passwordPrompt.noteId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: enteredPassword }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setSelectedNote({ title: passwordPrompt.title, content: data.content });
-        setPasswordPrompt({ noteId: null, title: "" });
-        setEnteredPassword("");
-      } else {
-        alert("Wrong password!");
-      }
-    } catch {
-      alert("Error checking password");
-    }
-  }}
->
-  Unlock
-</button>
+              className="button-style unlock-button"
+              onClick={async () => {
+                try {
+                  // 6. Updated Fetch Call
+                  const res = await fetch(`${BASE_URL}/checknote/${passwordPrompt.noteId}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ password: enteredPassword }),
+                  });
+                  if (res.ok) {
+                    const data = await res.json();
+                    setSelectedNote({ title: passwordPrompt.title, content: data.content });
+                    setPasswordPrompt({ noteId: null, title: "" });
+                    setEnteredPassword("");
+                  } else {
+                    alert("Wrong password!");
+                  }
+                } catch {
+                  alert("Error checking password");
+                }
+              }}
+            >
+              Unlock
+            </button>
 
             <button
               className="button-style cancel-button"
@@ -326,7 +353,7 @@ const NotesApp = ({ email, setPage }) => {
                     ? note.content.substring(0, 100) + "..."
                     : note.content}
                 </p>
-              )}      
+              )}
               <div
                 className="note-actions"
                 onClick={(e) => e.stopPropagation()}
@@ -351,14 +378,17 @@ const NotesApp = ({ email, setPage }) => {
     </div>
   );
 };
+
 export default function App() {
   const [page, setPage] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [alertMessage, setAlertMessage] = useState(null);
+
   const handleLogin = async () => {
     try {
-      const response = await fetch("http://localhost:5000/login", {
+      // 7. Updated Fetch Call
+      const response = await fetch(`${BASE_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -377,9 +407,11 @@ export default function App() {
       setAlertMessage("Failed to connect to the server.");
     }
   };
+
   const handleSignup = async () => {
     try {
-      const response = await fetch("http://localhost:5000/signup", {
+      // 8. Updated Fetch Call
+      const response = await fetch(`${BASE_URL}/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -396,6 +428,7 @@ export default function App() {
       setAlertMessage("Failed to connect to the server.");
     }
   };
+
   return (
     <>
       {page === "login" && (
